@@ -1,0 +1,2 @@
+variant,method,ratio,nm_pattern,accuracy,nonzero_prunable,total_prunable,weight_sparsity,dense_model_mb,effective_nonzero_weight_mb,gmacs_per_image,gflops_per_image,infer_ms_per_image,infer_images_per_s,effective_gflops_per_s,peak_cpu_rss_mb,peak_gpu_allocated_mb
+actchannel@0.3,actchannel,0.3,,0.8514,7886912,11164352,0.2935629403300791,42.66197967529297,30.086181640625,0.557889024,1.115778048,0.15912342375486332,6284.429887208462,7012.028912342317,1332.33203125,163.5615234375

@@ -1,0 +1,2 @@
+variant,method,ratio,nm_pattern,accuracy,nonzero_prunable,total_prunable,weight_sparsity,dense_model_mb,effective_nonzero_weight_mb,gmacs_per_image,gflops_per_image,infer_ms_per_image,infer_images_per_s,effective_gflops_per_s,peak_cpu_rss_mb,peak_gpu_allocated_mb
+baseline,baseline,0.0,,0.9165,11164352,11164352,0.0,42.66197967529297,42.588623046875,0.557889024,1.115778048,0.16671922749992518,5998.108406545062,6692.5576895472395,1453.18359375,165.513671875

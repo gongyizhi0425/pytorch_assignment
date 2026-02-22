@@ -1,0 +1,58 @@
+# LLM Wanda pruning assignment config
+# Run: python src/run_llm_wanda.py --config configs/llm_wanda.yaml
+
+seed: 0
+
+model:
+  # Ungated base model (no special HF access needed)
+  name: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+  dtype: auto        # auto|float32|float16|bfloat16
+  device: auto       # auto|cpu|cuda
+  # cache_dir: /path/to/hf_cache   # optional: store HF downloads here
+  # token: "hf_xxx"                 # optional: for gated models (or export HF_TOKEN)
+  # local_files_only: true          # optional: offline mode (load only from cache)
+
+# Held-out evaluation dataset (perplexity)
+eval:
+  dataset: wikitext
+  config: wikitext-2-raw-v1
+  split: test
+  max_eval_tokens: 60000         # smaller to reduce runtime/memory
+  block_size: 512
+  batch_size: 1
+
+# Calibration dataset for Wanda activation stats
+calibration:
+  dataset: wikitext
+  config: wikitext-2-raw-v1
+  split: train
+  num_samples: 64
+  seq_len: 128
+
+# A domain-shifted calibration setting to intentionally degrade Wanda
+calibration_shifted:
+  enabled: true
+  # Domain-shifted calibration: synthetic random tokens
+  dataset: random_tokens
+  config: null
+  split: train
+  num_samples: 64
+  seq_len: 128
+
+pruning:
+  # At least 3 pruning ratios
+  sparsity_ratios: [0.3, 0.5, 0.8]
+  # Which 2D weights to prune (regex on module name). null -> all eligible 2D weights excluding embeddings/lm_head.
+  include_regex: null
+  exclude_regex: "(wte|wpe|embed|lm_head)"
+
+speed:
+  enabled: true
+  prefill_seq_len: 256
+  decode_new_tokens: 32
+  repeats: 3
+
+output:
+  out_dir: results_llm
+  run_name: tinylama_wanda
+  save_pruned_models: false

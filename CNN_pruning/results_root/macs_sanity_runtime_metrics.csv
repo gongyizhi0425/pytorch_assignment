@@ -1,0 +1,3 @@
+model,device,dtype,batch_size,resolution,gmacs_per_image,gflops_per_image,peak_cpu_rss_mb,peak_gpu_allocated_mb,activation_total_per_fwd_mb,activation_max_single_mb
+resnet18,cpu,fp32,1,64,0.149371392,0.298742784,590.234375,,2.333892822265625,0.25
+mobilenet_v3_small,cpu,fp32,1,64,0.007006264,0.014012528,569.90234375,,1.32342529296875,0.0703125

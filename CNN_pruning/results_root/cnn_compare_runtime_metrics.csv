@@ -1,0 +1,3 @@
+model,device,dtype,batch_size,resolution,peak_cpu_rss_mb,peak_gpu_allocated_mb,activation_total_per_fwd_mb,activation_max_single_mb
+resnet18,cpu,fp32,1,64,588.3984375,,2.333892822265625,0.25
+mobilenet_v3_small,cpu,fp32,1,64,537.5078125,,1.32342529296875,0.0703125

@@ -1,0 +1,14 @@
+model: resnet18
+device: auto
+dtype: fp32
+pretrained: false
+
+batch_sizes: [1, 2, 4, 8, 16]
+resolution: 224
+
+warmup: 2
+iters: 5
+
+out_prefix: sanity_resnet18_224
+no_plot: true
+isolate_runs: false

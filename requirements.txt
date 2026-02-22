@@ -1,0 +1,21 @@
+# Core
+torch
+torchvision
+
+# LLM pruning (HuggingFace)
+transformers>=4.40
+datasets>=2.18
+pyyaml>=6.0
+tqdm>=4.66
+sentencepiece>=0.1.99
+accelerate>=0.30
+numpy
+
+# Metrics
+psutil
+thop
+
+# Reporting / plotting
+pandas
+openpyxl
+matplotlib

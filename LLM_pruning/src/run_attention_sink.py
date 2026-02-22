@@ -70,6 +70,38 @@ def _plot_curve(curve: np.ndarray, out_png: str, title: str):
     plt.close()
 
 
+def _plot_prefix_ablation(df_sum: pd.DataFrame, out_png: str, title: str):
+    """Plot ΔPPL vs prefix_len for each prefix type, one subplot per sequence length."""
+    prefix_rows = df_sum[df_sum["intervention"].str.startswith("prefix:")].copy()
+    if prefix_rows.empty:
+        return
+    prefix_rows["prefix_name"] = prefix_rows["intervention"].str.extract(r"prefix:(.+):plen\d+")[0]
+    prefix_rows["prefix_len"] = prefix_rows["intervention"].str.extract(r":plen(\d+)$")[0].astype(int)
+
+    lengths = sorted(prefix_rows["length"].unique())
+    n_cols = len(lengths)
+    fig, axes = plt.subplots(1, n_cols, figsize=(5 * n_cols, 4), sharey=True)
+    if n_cols == 1:
+        axes = [axes]
+
+    for ax, seq_L in zip(axes, lengths):
+        sub = prefix_rows[prefix_rows["length"] == seq_L]
+        for pname in sorted(sub["prefix_name"].unique()):
+            psub = sub[sub["prefix_name"] == pname].sort_values("prefix_len")
+            ax.plot(psub["prefix_len"], psub["delta_vs_baseline"], marker="o", label=pname)
+        ax.axhline(0.0, color="black", linewidth=0.5)
+        ax.set_xlabel("Prefix length (tokens)")
+        ax.set_title(f"L={seq_L}")
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=7)
+
+    axes[0].set_ylabel("ΔPPL vs baseline")
+    fig.suptitle(title, fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out_png, dpi=150)
+    plt.close(fig)
+
+
 def _plot_delta_ppl(df: pd.DataFrame, out_png: str, title: str):
     if df.empty:
         return
@@ -178,7 +210,8 @@ def main():
     # interventions
     interventions = cfg.get("interventions", {})
     enabled_interventions = bool(interventions.get("enabled", True))
-    prefix_len_tokens = int(interventions.get("prefix_len_tokens", 10))
+    raw_plen = interventions.get("prefix_len_tokens", [10])
+    prefix_len_list: list[int] = [int(x) for x in raw_plen] if isinstance(raw_plen, list) else [int(raw_plen)]
     prefixes = interventions.get("prefixes", []) if enabled_interventions else [{"name": "baseline", "text": ""}]
     sink_replacements = interventions.get("sink_replacements", []) if enabled_interventions else []
 
@@ -282,30 +315,32 @@ def main():
                 }
             )
 
-            # "prefix" intervention: build a fixed-length prefix (prefix_len_tokens) and PREPEND it.
-            # To keep evaluation targets identical, shift loss_start by prefix_len.
-            for p in prefixes:
-                name = str(p.get("name", ""))
-                if name == "baseline":
-                    continue
-                pref_ids_raw = prefix_name_to_ids.get(name, [])
-                pref_ids = _fixed_len_prefix_ids(pref_ids_raw, prefix_len_tokens)
-                new_ids = _prepend_prefix(base_ids, pref_ids)
-                inp2 = torch.tensor(new_ids, dtype=torch.long).unsqueeze(0).to(device)
-                attn_mask2 = torch.ones_like(inp2)
-                out = ppl_for_sequence(model, inp2, attn_mask2, loss_start=int(base_loss_start + len(pref_ids)))
-                per_intervention_ppl.setdefault(f"prefix:{name}", []).append(out.ppl)
-                rows_ppl.append(
-                    {
-                        "length": L,
-                        "intervention": f"prefix:{name}",
-                        "ppl": out.ppl,
-                        "tokens": out.tokens,
-                        "loss_start": int(base_loss_start + len(pref_ids)),
-                        "loss_tokens": loss_tokens,
-                        "prefix_len": int(len(pref_ids)),
-                    }
-                )
+            # "prefix" intervention: sweep over each prefix length in prefix_len_list.
+            # Build a fixed-length prefix and PREPEND it; shift loss_start accordingly.
+            for plen in prefix_len_list:
+                for p in prefixes:
+                    name = str(p.get("name", ""))
+                    if name == "baseline":
+                        continue
+                    pref_ids_raw = prefix_name_to_ids.get(name, [])
+                    pref_ids = _fixed_len_prefix_ids(pref_ids_raw, plen)
+                    new_ids = _prepend_prefix(base_ids, pref_ids)
+                    inp2 = torch.tensor(new_ids, dtype=torch.long).unsqueeze(0).to(device)
+                    attn_mask2 = torch.ones_like(inp2)
+                    out = ppl_for_sequence(model, inp2, attn_mask2, loss_start=int(base_loss_start + len(pref_ids)))
+                    ikey = f"prefix:{name}:plen{plen}"
+                    per_intervention_ppl.setdefault(ikey, []).append(out.ppl)
+                    rows_ppl.append(
+                        {
+                            "length": L,
+                            "intervention": ikey,
+                            "ppl": out.ppl,
+                            "tokens": out.tokens,
+                            "loss_start": int(base_loss_start + len(pref_ids)),
+                            "loss_tokens": loss_tokens,
+                            "prefix_len": plen,
+                        }
+                    )
 
             # sink token replacement at identified sink positions (usually includes pos 0)
             for spec in sink_repl_specs:
@@ -370,6 +405,12 @@ def main():
         df_sum,
         os.path.join(out_dir, f"{run_name}_delta_ppl.png"),
         title=f"{model_name} PG-19 ΔPPL vs baseline (loss last {int(analysis_cfg.get('eval_last_n', 128))} tokens)",
+    )
+
+    _plot_prefix_ablation(
+        df_sum,
+        os.path.join(out_dir, f"{run_name}_prefix_ablation.png"),
+        title=f"{model_name} PG-19 Prefix Length Ablation (eval last {int(analysis_cfg.get('eval_last_n', 128))} tokens)",
     )
 
 

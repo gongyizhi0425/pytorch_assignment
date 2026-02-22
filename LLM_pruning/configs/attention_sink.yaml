@@ -1,0 +1,63 @@
+# Attention Sink Analysis config
+# Run:
+#   python src/run_attention_sink.py --config configs/attention_sink.yaml --cache-dir /home/gyz/hf_cache
+
+seed: 0
+
+model:
+  name: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+  device: auto          # auto|cpu|cuda
+  dtype: auto           # auto|float32|float16|bfloat16
+  cache_dir: /home/gyz/hf_cache
+  local_files_only: false
+
+pg19:
+  split: test
+  streaming: true
+  num_excerpts: 50
+  min_book_tokens: 4000
+
+analysis:
+  lengths: [256, 512, 1024]
+  # Extract attention from >= 6 layers x >= 8 heads
+  num_layers: 6
+  num_heads: 8
+  # For each excerpt, use one random window
+  windows_per_book: 1
+  # Compute PPL only on the last N tokens (keeps targets fixed; interventions modify context)
+  eval_last_n: 128
+
+interventions:
+  enabled: true
+  # Prefix intervention settings
+  # We build a fixed-length prefix of this many tokens (repeat/truncate as needed),
+  # then PREPEND it to the excerpt sequence (increasing total length).
+  # Ablation: test multiple prefix lengths to see the transition from "no effect" to "significant".
+  prefix_len_tokens: [10, 32, 64, 128, 256]
+  prefixes:
+    - name: baseline
+      text: ""
+    - name: whitespace
+      # NOTE: this is a literal single space character, not the word "whitespace".
+      text: " "
+    - name: punctuation
+      # A punctuation-style prefix (here: dot + space).
+      text: ". "
+    - name: random_words
+      text: "random words "
+    - name: instruction
+      text: "### Instruction:\nSummarize the following text.\n### Input:\n"
+  # IMPORTANT: in this repo's implementation, a "prefix intervention" PREPENDS a fixed-length prefix
+  # to the excerpt (adds tokens to the front). We still compute PPL on the last eval_last_n tokens
+  # so the evaluated suffix targets remain comparable.
+  # Replace token at detected sink positions (usually includes pos 0)
+  # If both token_id and text are provided, token_id wins.
+  sink_replacements:
+    - name: eos
+      token_id: 2
+    - name: exclamation
+      text: "!"
+
+output:
+  out_dir: results_attention
+  run_name: tinylama_pg19_sink

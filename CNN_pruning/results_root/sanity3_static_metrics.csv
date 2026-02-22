@@ -1,0 +1,3 @@
+model,dtype,num_params,weights_and_buffers_mb
+resnet18,fp32,11689512,44.62864685058594
+mobilenet_v3_small,fp32,2542856,9.746559143066406

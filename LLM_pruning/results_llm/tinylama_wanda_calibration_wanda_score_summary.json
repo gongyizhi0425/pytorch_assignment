@@ -1,0 +1,19 @@
+{
+  "total_weights": 968884224,
+  "layers": 154,
+  "mean": 0.0024454484594611404,
+  "std": 0.005344406767454016,
+  "min": 0.0,
+  "max": 40.60837936401367,
+  "sample_size": 200000,
+  "p50": 0.0011081614065915346,
+  "p90": 0.006255537737160921,
+  "p99": 0.016456058248877525,
+  "run_tag": "tinylama_wanda",
+  "calibration": "calibration",
+  "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+  "dtype": "float16",
+  "device": "cuda",
+  "include_regex": null,
+  "exclude_regex": "(wte|wpe|embed|lm_head)"
+}

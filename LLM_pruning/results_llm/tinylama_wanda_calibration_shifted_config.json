@@ -1,0 +1,54 @@
+{
+  "seed": 0,
+  "model": {
+    "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "dtype": "auto",
+    "device": "auto",
+    "cache_dir": "/home/gyz/hf_cache",
+    "local_files_only": true
+  },
+  "eval": {
+    "dataset": "wikitext",
+    "config": "wikitext-2-raw-v1",
+    "split": "test",
+    "max_eval_tokens": 60000,
+    "block_size": 512,
+    "batch_size": 1
+  },
+  "pruning": {
+    "sparsity_ratios": [
+      0.3,
+      0.5,
+      0.8
+    ],
+    "include_regex": null,
+    "exclude_regex": "(wte|wpe|embed|lm_head)"
+  },
+  "speed": {
+    "enabled": true,
+    "prefill_seq_len": 256,
+    "decode_new_tokens": 32,
+    "repeats": 3
+  },
+  "output": {
+    "out_dir": "results_llm",
+    "run_name": "tinylama_wanda",
+    "save_pruned_models": false
+  },
+  "run_section": "calibration_shifted",
+  "active_calibration": {
+    "enabled": true,
+    "dataset": "random_tokens",
+    "config": null,
+    "split": "train",
+    "num_samples": 64,
+    "seq_len": 128
+  },
+  "base_calibration": {
+    "dataset": "wikitext",
+    "config": "wikitext-2-raw-v1",
+    "split": "train",
+    "num_samples": 64,
+    "seq_len": 128
+  }
+}

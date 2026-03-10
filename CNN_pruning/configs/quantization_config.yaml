@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────
+# K-means vs. Linear Quantization (PTQ) — Config Reference
+# ─────────────────────────────────────────────────────────
+# Model  : torchvision.models.resnet18  (CIFAR-10 stem, 32×32)
+# Dataset: CIFAR-10
+# Script : src/run_quantization.py
+#
+# Usage (from project root):
+#   python src/run_quantization.py \
+#       --ckpt CNN_pruning/results_src/hw90_baseline_best.pt \
+#       --out-dir CNN_pruning/results_quantization
+#
+#   # Or with explicit config values:
+#   python src/run_quantization.py \
+#       --ckpt CNN_pruning/results_src/hw90_baseline_best.pt \
+#       --device cpu \
+#       --calib-size 1000 \
+#       --eval-bs 128 \
+#       --latency-warmup 30 \
+#       --latency-iters 100 \
+#       --out-dir CNN_pruning/results_quantization
+# ─────────────────────────────────────────────────────────
+
+model: resnet18
+dataset: cifar10
+resolution: 32
+
+# Baseline checkpoint (trained ~91.6% accuracy, CIFAR-10 stem)
+ckpt: ../results_src/hw90_baseline_best.pt
+
+# Evaluation
+device: cpu             # cpu for latency measurement
+calib_size: 1000        # 1,000 training images for calibration
+eval_bs: 128
+
+# CPU latency: batch=1, >= 100 runs
+latency_warmup: 30
+latency_iters: 100
+
+# Quantization bit-widths
+bits: [8, 4]
+
+# Output
+out_dir: ../results_quantization
+seed: 42
+skip_sensitivity: false

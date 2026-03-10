@@ -1,17 +1,104 @@
-# PyTorch Demo (CNN Metrics + Pruning)
+# PyTorch Experiments — CNN Pruning / Quantization & LLM Compression
 
-This repo contains two experiment tracks:
+> 基于 PyTorch 的深度学习模型压缩实验合集，涵盖 CNN 剪枝 / 量化和 LLM 压缩（剪枝、注意力分析、量化）。
 
-1) **CNN efficiency comparison** (peak memory + compute): ResNet-18 vs MobileNetV3
-2) **CNN pruning on CIFAR-10**: baseline + weight pruning + activation-based pruning, with CSV/plots/Excel
+## 目录结构总览
 
-It also contains a third track:
+```
+pytorch_demo/
+├── README.md                 ← 本文件
+├── requirements.txt          ← Python 依赖
+├── .gitignore
+│
+├── src/                      ← CNN 实验源码（剪枝 + 量化）
+│   ├── hello_torch.py            # 环境验证（PyTorch / CUDA / GPU 信息）
+│   ├── MemoryMeaseurement.py     # CNN 效率对比（峰值内存 + 计算量）
+│   ├── pruning_common.py         # 剪枝公共工具（数据加载、指标、模型工具）
+│   ├── pruning_experiment.py     # 剪枝实验框架（fine/channel/N:M 剪枝引擎）
+│   ├── run_baseline.py           # CIFAR-10 ResNet-18 基线训练
+│   ├── run_weight_pruning.py     # 权重剪枝实验入口
+│   ├── run_activation_pruning.py # 激活值剪枝实验入口
+│   ├── run_quantization.py       # CNN K-means vs Linear 量化（PTQ）
+│   ├── plot_and_excel.py         # 汇总 CSV → Excel + 对比图表
+│   └── readme.md                 # CNN 运行命令速查
+│
+├── CNN_pruning/              ← CNN 实验配置 + 结果
+│   ├── configs/
+│   │   ├── test_config.yaml          # 剪枝测试配置
+│   │   └── quantization_config.yaml  # K-means/Linear 量化配置
+│   ├── results_root/             # 调试/sanity check 实验结果
+│   ├── results_src/              # 正式剪枝实验结果（hw90 系列）
+│   └── results_quantization/     # K-means vs Linear 量化结果
+│
+├── LLM_pruning/              ← LLM 实验源码 + 配置 + 结果
+│   ├── configs/
+│   │   ├── llm_wanda.yaml        # Wanda 剪枝配置
+│   │   ├── attention_sink.yaml   # Attention Sink 分析配置
+│   │   ├── smoothquant.yaml      # SmoothQuant W8A8 配置
+│   │   └── awq.yaml              # AWQ W4A16 配置
+│   ├── src/
+│   │   ├── run_llm_wanda.py      # LLM 剪枝（Baseline + Magnitude + Wanda）
+│   │   ├── run_attention_sink.py # Attention Sink 分析（PG-19）
+│   │   ├── run_smoothquant.py    # SmoothQuant W8A8 量化
+│   │   ├── run_awq.py            # AWQ W4A16 量化
+│   │   ├── rerun_error_analysis.py # AWQ 误差分析独立重跑脚本
+│   │   ├── attention_sink/       # Attention Sink 子模块
+│   │   │   ├── attn_curve.py         # 注意力曲线提取
+│   │   │   ├── pg19.py               # PG-19 数据集加载（流式）
+│   │   │   └── ppl.py                # 困惑度计算
+│   │   ├── llm_prune/            # LLM 剪枝子模块
+│   │   │   ├── data.py               # 校准数据加载
+│   │   │   ├── prune.py              # 剪枝算法（magnitude / Wanda）
+│   │   │   ├── metrics.py            # PPL + 速度指标
+│   │   │   ├── activation_stats.py   # 激活统计收集
+│   │   │   ├── plot.py               # 绘图工具
+│   │   │   └── utils.py              # 通用工具
+│   │   └── llmwanda/             # 模型下载工具
+│   │       ├── download_model.py     # HuggingFace 模型下载
+│   │       └── README.md
+│   ├── results_llm/              # Wanda 剪枝结果
+│   ├── results_attention/        # Attention Sink 分析结果
+│   ├── results_smoothquant/      # SmoothQuant 结果
+│   └── results_awq/              # AWQ 结果（含量化模型权重）
+│
+├── tools/                    ← 独立辅助工具
+│   ├── convert_csv_to_excel.py       # CSV → Excel 批量转换
+│   ├── rewrite_llm_snapshot_json.py  # 实验快照 JSON 重写
+│   └── show_calibration_examples.py  # 查看校准样本
+│
+├── data/                     ← 数据集（.gitignore 排除）
+│   └── cifar-10-batches-py/      # CIFAR-10 解压数据
+└── venv/                     ← Python 虚拟环境（.gitignore 排除）
+```
 
-3) **LLM pruning (baseline / magnitude / WANDA)** on a HuggingFace causal LM, with perplexity + speed + sparsity metrics.
+---
 
-## 0) Environment
+## 实验一览
 
-Recommended:
+### Track A: CNN 效率与剪枝 / 量化 (CIFAR-10 / ResNet-18)
+
+| 实验 | 脚本 | 说明 |
+|------|------|------|
+| 环境检查 | `src/hello_torch.py` | PyTorch 版本、CUDA、GPU 信息 |
+| CNN 效率对比 | `src/MemoryMeaseurement.py` | ResNet-18 vs MobileNetV3 峰值内存/计算量/延迟 |
+| 基线训练 | `src/run_baseline.py` | CIFAR-10 ResNet-18 训练至 90% acc |
+| 权重剪枝 | `src/run_weight_pruning.py` | Fine-grained / Channel (Slim) / N:M 结构化剪枝 |
+| 激活值剪枝 | `src/run_activation_pruning.py` | 基于激活统计的通道剪枝 + fine-tune |
+| K-means/Linear 量化 | `src/run_quantization.py` | CNN 权重 PTQ：K-means 聚类 vs 线性量化 (4/8-bit) |
+| 汇总绘图 | `src/plot_and_excel.py` | 合并所有 CSV → Excel + 对比图表 |
+
+### Track B: LLM 压缩 (TinyLlama-1.1B / WikiText-2)
+
+| 实验 | 脚本 | 说明 |
+|------|------|------|
+| Wanda 剪枝 | `LLM_pruning/src/run_llm_wanda.py` | Baseline + Magnitude + Wanda 非结构化剪枝 |
+| Attention Sink | `LLM_pruning/src/run_attention_sink.py` | PG-19 长文本注意力模式分析 + sink token 干预 |
+| SmoothQuant W8A8 | `LLM_pruning/src/run_smoothquant.py` | 逐通道平滑 + INT8 权重/激活量化 (α sweep) |
+| AWQ W4A16 | `LLM_pruning/src/run_awq.py` | 激活感知 4-bit 权重量化 (group size sweep) |
+
+---
+
+## 环境准备
 
 ```bash
 python3 -m venv venv
@@ -20,144 +107,114 @@ pip install -U pip
 pip install -r requirements.txt
 ```
 
-Notes:
-- The pruning scripts under `src/` are configured as **GPU-only** (`--device cuda/auto` + internal CUDA checks).
-- The older all-in-one pruning script at repo root can run on CPU.
+硬件要求：NVIDIA GPU (>=8 GB VRAM)，已在 RTX 4060 Laptop 上验证。
 
-## 1) Quick GPU sanity check
+---
 
-```bash
-python3 hello_torch.py
-```
+## 运行方法
 
-## 2) CNN efficiency comparison (peak metrics)
-
-Script: `MemoryMeaseurement.py`
-
-Example (CPU):
+### 0) 环境验证
 
 ```bash
-python3 MemoryMeaseurement.py --device cpu --models resnet18,mobilenet_v3_small --batch-sizes 1-16 --resolutions 224 --out-prefix cnn_compare
+python src/hello_torch.py
 ```
 
-Outputs:
-- `cnn_compare_static_metrics.csv`
-- `cnn_compare_runtime_metrics.csv`
-- `cnn_compare_*.png`
+### 1) CNN 效率对比
 
-## 3) Pruning assignment (GPU-only pipeline)
+```bash
+python src/MemoryMeaseurement.py --device cpu \
+  --models resnet18,mobilenet_v3_small \
+  --batch-sizes 1-16 --resolutions 224 \
+  --out-prefix CNN_pruning/results_root/cnn_compare
+```
 
-All scripts are in `src/`. Run from the `src/` directory:
+### 2) CNN 剪枝实验
 
 ```bash
 cd src
-```
 
-### 3.1 Baseline (produces checkpoint)
+# 基线训练
+python run_baseline.py --device auto --out-prefix hw90 \
+  --epochs 0 --resolution 32
 
-```bash
-../venv/bin/python run_baseline.py \
-  --device auto \
-  --out-prefix hw90 \
-  --epochs 0 \
-  --resolution 32
-```
+# 权重剪枝
+python run_weight_pruning.py --device auto \
+  --ckpt hw90_baseline_best.pt --out-prefix hw90_wt \
+  --ratios 0.3,0.5,0.8 --nm-patterns 1:4,2:4,3:4 \
+  --channel-impl slim --resolution 32
 
-Outputs:
-- `hw90_baseline.csv`
-- `hw90_baseline.pt`
-- (if `--eval-every` enabled) `hw90_baseline_best.pt`
+# 激活值剪枝
+python run_activation_pruning.py --device auto \
+  --ckpt hw90_baseline_best.pt --out-prefix hw90_act_ft \
+  --impl slim --ratios 0.3,0.5,0.8 --resolution 32
 
-### 3.2 Weight pruning (fine / channel / N:M)
-
-```bash
-../venv/bin/python run_weight_pruning.py \
-  --device auto \
-  --ckpt hw90_baseline_best.pt \
-  --out-prefix hw90_wt \
-  --ratios 0.3,0.5,0.8 \
-  --nm-patterns 1:4,2:4,3:4 \
-  --channel-impl slim \
-  --resolution 32 \
-  --test-limit 1000
-```
-
-Output:
-- `hw90_wt_weight.csv`
-
-### 3.3 Activation-based channel pruning (mask or true slimming)
-
-```bash
-../venv/bin/python run_activation_pruning.py \
-  --device auto \
-  --ckpt hw90_baseline_best.pt \
-  --out-prefix hw90_act_ft \
-  --impl slim \
-  --ratios 0.3,0.5,0.8 \
-  --resolution 32 \
-  --test-limit 1000
-```
-
-Output:
-- `hw90_act_ft_activation.csv`
-
-### 3.4 Merge to Excel + plots
-
-```bash
-../venv/bin/python plot_and_excel.py \
-  --out-prefix hw90_combo \
-  --baseline-prefix hw90 \
-  --weight-prefix hw90_wt \
+# 汇总
+python plot_and_excel.py --out-prefix hw90_combo \
+  --baseline-prefix hw90 --weight-prefix hw90_wt \
   --activation-prefix hw90_act_ft
 ```
 
-Outputs:
-- `hw90_combo_results.xlsx` (multi-sheet: baseline/fine/channel/nm/actchannel)
-- `hw90_combo_*.png`
-
-## 4) Dataset location
-
-CIFAR-10 is downloaded automatically to:
-- `./data/` (for repo-root scripts)
-- `./src/data/` (for `src/` scripts when you keep default `--data-dir ./data` while running inside `src/`)
-
-To unify dataset location, always pass an absolute or repo-root path, e.g. `--data-dir ../data` when running from `src/`.
-
-## 5) LLM Wanda pruning assignment
-
-Config file: `LLM_pruning/configs/llm_wanda.yaml`
-
-Run:
+### 3) CNN K-means vs Linear 量化
 
 ```bash
-./venv/bin/python LLM_pruning/src/run_llm_wanda.py --config LLM_pruning/configs/llm_wanda.yaml
+python src/run_quantization.py \
+  --ckpt CNN_pruning/results_src/hw90_baseline_best.pt \
+  --out-dir CNN_pruning/results_quantization
 ```
 
-Outputs:
-- `LLM_pruning/results_llm/<run_name>_calibration.csv` (baseline + magnitude + wanda sweeps)
-- `LLM_pruning/results_llm/<run_name>_calibration_shifted.csv` (domain-shifted calibration to induce Wanda degradation)
-- `LLM_pruning/results_llm/*_ppl_vs_sparsity.png`
-
-## 6) Attention Sink analysis (PG-19)
-
-Config file: `LLM_pruning/configs/attention_sink.yaml`
-
-Run (recommended to use the repo venv explicitly):
+### 4) LLM Wanda 剪枝
 
 ```bash
-./venv/bin/python LLM_pruning/src/run_attention_sink.py \
-  --config LLM_pruning/configs/attention_sink.yaml \
-  --cache-dir /home/gyz/hf_cache \
-  --local-files-only
+python LLM_pruning/src/run_llm_wanda.py \
+  --config LLM_pruning/configs/llm_wanda.yaml
 ```
 
-Notes:
-- PG-19 is loaded via streaming with `trust_remote_code=True` (see `src/attention_sink/pg19.py`).
-- Perplexity is computed on a fixed suffix (last `analysis.eval_last_n` tokens) so interventions change only context while keeping the evaluated targets comparable.
+### 5) Attention Sink 分析
 
-Outputs (in `LLM_pruning/results_attention/`):
-- `<run_name>_L{L}_curve.csv/.png`: attention-to-key-position curve for each length
-- `<run_name>_sink_summary.csv`: top-k sink positions per length
-- `<run_name>_ppl_interventions.csv`: per-excerpt PPL for each intervention
-- `<run_name>_ppl_summary.csv`: mean/std + ΔPPL vs baseline
-- `<run_name>_delta_ppl.png`: bar plot of ΔPPL vs baseline
+```bash
+python LLM_pruning/src/run_attention_sink.py \
+  --config LLM_pruning/configs/attention_sink.yaml
+```
+
+### 6) SmoothQuant W8A8
+
+```bash
+python LLM_pruning/src/run_smoothquant.py \
+  --config LLM_pruning/configs/smoothquant.yaml
+```
+
+### 7) AWQ W4A16
+
+```bash
+python LLM_pruning/src/run_awq.py \
+  --config LLM_pruning/configs/awq.yaml
+```
+
+---
+
+## 缓存与大文件说明
+
+以下文件/目录被 `.gitignore` 排除，不会上传到 Git：
+
+| 类型 | 路径 | 大小 | 说明 |
+|------|------|------|------|
+| 虚拟环境 | `venv/` | ~7 GB | Python 依赖，用 `pip install -r requirements.txt` 重建 |
+| CIFAR-10 数据 | `data/`, `src/data/` | ~341 MB × 2 | 运行脚本时自动下载 |
+| HF 缓存 | `~/.cache/huggingface/hub/` | ~16 GB | TinyLlama + Mistral + datasets，系统级缓存 |
+| CNN checkpoint | `*.pt` | ~43 MB each | `run_baseline.py` 生成，可重新训练 |
+| AWQ 模型权重 | `results_awq/awq_g*/model.safetensors` | ~2.1 GB × 3 | `run_awq.py` 生成，可重新量化 |
+| Excel 文件 | `*.xlsx` | 各数 KB | 从 CSV 自动生成 |
+
+CSV、PNG、YAML 配置、analysis.txt 等 **实验结果会保留在 Git 中**，方便复现和审查。
+
+---
+
+## 源码统计
+
+| 模块 | 文件数 | 总行数 | 说明 |
+|------|:------:|:------:|------|
+| `src/` (CNN) | 9 | 4,377 | CNN 效率/剪枝/量化 |
+| `LLM_pruning/src/` (主脚本) | 5 | 2,440 | LLM 剪枝 + 量化 |
+| `LLM_pruning/src/` (子模块) | 10 | 834 | attention_sink / llm_prune / llmwanda |
+| `tools/` | 3 | 285 | 辅助工具 |
+| **合计** | **27** | **~8,250** | |

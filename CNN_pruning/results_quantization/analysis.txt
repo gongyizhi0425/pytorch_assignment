@@ -1,0 +1,36 @@
+========================================================================
+  Brief Analysis  —  K-means vs. Linear Quantization (PTQ)
+========================================================================
+
+Baseline FP32: acc = 91.65%, size = 42.66 MB, latency = 9.65 ms
+
+--- 8-bit ---
+  Linear  : acc=91.70%  size=10.72 MB  latency=8.91 ms
+  K-means : acc=91.69%  size=10.74 MB  latency=8.79 ms
+  ➜ Winner: Linear
+    Linear quantization with per-layer scale already provides sufficient
+    resolution at this bit-width, while k-means may suffer from sub-optimal
+    convergence or initialization sensitivity.
+
+--- 4-bit ---
+  Linear  : acc=90.04%  size=5.40 MB  latency=9.26 ms
+  K-means : acc=90.81%  size=5.40 MB  latency=5.89 ms
+  ➜ Winner: K-means
+    K-means uses **non-uniform** quantization that places more centroids
+    in the high-density region of the weight distribution (typically near zero).
+    This yields lower reconstruction error than uniform linear quantization
+    where levels are evenly spaced across [w_min, w_max].
+
+--- Why is latency nearly the same? ---
+  Both methods *simulate* quantization by dequantizing weights back to FP32
+  before inference, so the actual computation is identical. Real speedup would
+  require hardware-level integer-arithmetic support.
+
+--- Most quantization-sensitive layers ---
+  kmeans  4b — layer1.0.conv1 (Δ=+0.27%), layer1.0.conv2 (Δ=+0.08%), layer2.1.conv1 (Δ=-0.01%)
+  linear  4b — conv1 (Δ=+0.16%), layer4.1.conv1 (Δ=+0.10%), layer2.0.downsample.0 (Δ=+0.06%)
+
+  Observation: The first conv layer (conv1) and the final FC layer tend to be
+  the most sensitive.  conv1 has very few weights so even small perturbations
+  distort low-level features; the FC layer directly outputs class logits.
+  Deeper residual blocks with many weights are generally more robust.

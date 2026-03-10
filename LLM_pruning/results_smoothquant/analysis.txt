@@ -1,0 +1,38 @@
+======================================================================
+  Brief Analysis — SmoothQuant (W8A8) on TinyLlama-1.1B / WikiText-2
+======================================================================
+
+Baseline FP16   :  PPL = 12.63
+Naïve W8A8 PTQ  :  PPL = 58.05  (Δ = +45.42)
+
+SmoothQuant sweep:
+  α = 0.00  →  PPL = 168.55  (Δ = +155.92)
+  α = 0.25  →  PPL = 65.23  (Δ = +52.60)
+  α = 0.50  →  PPL = 15.44  (Δ = +2.81)
+  α = 0.75  →  PPL = 13.12  (Δ = +0.49)
+
+Best α = 0.75  →  PPL = 13.12
+
+--- Why does Naïve W8A8 degrade PPL? ---
+  Activations in LLMs exhibit strong per-channel outliers (some channels
+  have max values ~70× larger than the median).  Per-tensor INT8 quantisation
+  must accommodate these outliers, wasting most of the 256 quantisation levels
+  on the small-valued majority channels.  This creates large rounding errors.
+
+--- How does SmoothQuant help? ---
+  SmoothQuant redistributes the quantisation difficulty from activations
+  to weights by per-channel scaling:  X' = X / s,  W' = s · W.
+  Weights are easier to quantise (per-channel scale already), so absorbing
+  some activation magnitude into weights evens out the dynamic range.
+  The hyper-parameter α controls the trade-off: α=0 puts all burden on
+  weights; α=1 keeps activations untouched (like naïve W8A8).
+
+--- Latency ---
+  Since this is *simulated* quantisation (dequant back to FP16 before matmul),
+  actual throughput may be lower than the FP16 baseline.  Real speedup requires
+  INT8 GEMM kernels (e.g. via TensorRT-LLM or torchao).
+
+--- Outlier channels ---
+  Before smoothing, a handful of channels have ~10-70× larger activation
+  magnitudes than the rest.  After SmoothQuant, the distribution becomes
+  much more uniform, making per-tensor INT8 quantisation much more effective.

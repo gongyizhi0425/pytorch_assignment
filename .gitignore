@@ -1,24 +1,36 @@
-# Python
+# ──────── Python ────────
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
 
-# Virtual environment
+# ──────── Virtual environment ────────
 venv/
+.venv/
 
-# Data (too large for git)
+# ──────── Datasets (too large for git) ────────
 data/
 src/data/
+*.tar.gz
 
-# Model checkpoints
+# ──────── Model checkpoints & weights (large binary) ────────
 *.pt
+*.pth
+*.safetensors
 
-# Generated Excel (can be regenerated from CSV)
+# ──────── Generated Excel (regenerable from CSV) ────────
 *.xlsx
 
-# IDE
+# ──────── IDE / Editor ────────
 .vscode/
+.idea/
+*.swp
+*.swo
 
-# OS
+# ──────── OS ────────
 .DS_Store
 Thumbs.db
+
+# ──────── Misc ────────
+*.log
+.env

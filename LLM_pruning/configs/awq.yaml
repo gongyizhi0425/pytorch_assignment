@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────
+#  AWQ (W4A16) Experiment Config — TinyLlama on WikiText-2
+# ─────────────────────────────────────────────────────
+
+model:
+  name: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+  torch_dtype: float16
+  device: auto
+
+eval:
+  dataset: wikitext
+  config: wikitext-2-raw-v1
+  split: test
+  max_tokens: 60000
+  block_size: 512
+
+calibration:
+  dataset: wikitext
+  config: wikitext-2-raw-v1
+  split: train
+  max_samples: 128          # AutoAWQ default
+  max_seq_len: 512          # AutoAWQ default
+
+awq:
+  w_bit: 4
+  zero_point: true
+  version: GEMM
+  group_sizes: [32, 64, 128]
+  duo_scaling: true
+  apply_clip: true
+
+speed:
+  prompt_len: 256
+  new_tokens: 32
+  warmup: 3
+  repeats: 5
+
+error_analysis:
+  target_layer: model.layers.0.self_attn.q_proj   # layer to analyze quant error
+  naive_group_size: 128                            # group size for naive baseline
+
+output:
+  dir: results_awq

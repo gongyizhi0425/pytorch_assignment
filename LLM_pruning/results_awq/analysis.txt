@@ -1,0 +1,43 @@
+======================================================================
+  Brief Analysis — AWQ (W4A16) on TinyLlama-1.1B / WikiText-2
+======================================================================
+
+Baseline FP16       :  PPL = 11.21  |  size = 2098 MB
+Naïve W4A16 (g=128) :  PPL = 12.65  (Δ = +1.43)  |  size = 541 MB
+
+AWQ W4A16 sweep:
+  g =  32  →  PPL = 11.24  (Δ = +0.03)  |  size = 590 MB
+  g =  64  →  PPL = 11.24  (Δ = +0.03)  |  size = 557 MB
+  g = 128  →  PPL = 11.25  (Δ = +0.04)  |  size = 541 MB
+
+Best group size = 64  →  PPL = 11.24
+
+--- Why does Naïve W4 degrade PPL? ---
+  4-bit quantisation has only 16 levels (-8 to +7). Groupwise
+  quantisation (group_size=128) means 128 weights share one scale.
+  Important weight channels that correspond to large activations
+  receive the same rough treatment as unimportant ones → large error.
+
+--- How does AWQ help? ---
+  AWQ observes which weight channels are 'important' by looking at
+  activation magnitudes on a calibration set. It applies per-channel
+  scaling so that important channels have finer quantisation granularity.
+  This reduces error on the channels that matter most for accuracy.
+
+--- Group size trade-off ---
+  Smaller group size → more scales to store (slight overhead) but finer
+  quantisation → better PPL. Larger group → fewer scales, smaller model,
+  but coarser quantisation → PPL degrades.
+
+--- Quantisation error analysis (original weight space) ---
+  Target layer       : model.layers.0.self_attn.q_proj
+  Before AWQ (Naïve) : mean MAE = 0.001800
+  After AWQ (equiv.) : mean MAE = 0.000012
+  Error reduction    = 99.3%
+
+  Note: AWQ equivalent error is computed by recovering the per-channel
+  scaling factor s from the AWQ output, then mapping the quantised
+  weights back to the original weight space:  W_equiv = Q(W*s) / s
+  This gives a fair comparison of quantisation error before vs after
+  AWQ scaling, both measured in the same coordinate system.
+

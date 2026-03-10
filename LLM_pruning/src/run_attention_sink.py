@@ -399,6 +399,23 @@ def main():
     pd.DataFrame(rows_ppl).to_csv(os.path.join(out_dir, f"{run_name}_ppl_interventions.csv"), index=False)
 
     df_sum = pd.DataFrame(rows_ppl_summary)
+
+    # ── Add prefix_len and total_tokens columns; sort by prefix_len ──
+    import re as _re
+
+    def _extract_plen(intervention: str):
+        """Extract prefix length from intervention key like 'prefix:whitespace:plen64'."""
+        m = _re.search(r":plen(\d+)$", str(intervention))
+        return int(m.group(1)) if m else 0
+
+    df_sum["prefix_len"] = df_sum["intervention"].apply(_extract_plen)
+    df_sum["total_tokens"] = df_sum["length"] + df_sum["prefix_len"]
+
+    # Sort: primary by length, secondary by prefix_len (0 for baseline/sink), then intervention name
+    df_sum = df_sum.sort_values(
+        ["length", "prefix_len", "intervention"], ascending=True
+    ).reset_index(drop=True)
+
     df_sum.to_csv(os.path.join(out_dir, f"{run_name}_ppl_summary.csv"), index=False)
 
     _plot_delta_ppl(

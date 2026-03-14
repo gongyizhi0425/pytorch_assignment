@@ -80,12 +80,12 @@ pytorch_demo/
 
 ### 文件分类依据
 
-| 目标目录 | 文件 | 理由 |
-|---------|------|------|
-| `CNN/src/` | pruning_common, pruning_experiment, run_baseline, run_weight_pruning, run_activation_pruning, run_quantization, run_search_space_eval, run_ss3_supplement, analyze_search_space, nas_trial, plot_and_excel, readme.md | 全部绑定 CIFAR-10 ResNet-18 或 MobileNetV2 |
-| `basic/` | hello_torch.py | 纯环境检测，不属于任何实验 |
-| `basic/` | MemoryMeaseurement.py | 通用模型基准测试（非 CIFAR-10 专用） |
-| `CNN/data/` | cifar-10-batches-py/, cifar-10-python.tar.gz | CIFAR-10 数据归属 CNN |
+| 目标目录    | 文件                                                                                                                                                                                                                  | 理由                                       |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `CNN/src/`  | pruning_common, pruning_experiment, run_baseline, run_weight_pruning, run_activation_pruning, run_quantization, run_search_space_eval, run_ss3_supplement, analyze_search_space, nas_trial, plot_and_excel, readme.md | 全部绑定 CIFAR-10 ResNet-18 或 MobileNetV2 |
+| `basic/`    | hello_torch.py                                                                                                                                                                                                        | 纯环境检测，不属于任何实验                 |
+| `basic/`    | MemoryMeaseurement.py                                                                                                                                                                                                 | 通用模型基准测试（非 CIFAR-10 专用）       |
+| `CNN/data/` | cifar-10-batches-py/, cifar-10-python.tar.gz                                                                                                                                                                          | CIFAR-10 数据归属 CNN                      |
 
 ### 执行的操作
 
@@ -100,26 +100,26 @@ pytorch_demo/
 
 ### 更新的路径引用
 
-| 文件 | 修改内容 |
-|------|---------|
-| `CNN/src/analyze_search_space.py` | `../CNN_pruning/results_search_space/` → `../results_search_space/` |
-| `CNN/src/run_ss3_supplement.py` | `../CNN_pruning/results_search_space/` → `../results_search_space/` |
-| `CNN/src/run_quantization.py` | docstring 中 `src/run_quantization.py` → `CNN/src/run_quantization.py` 等 |
-| `CNN/src/run_search_space_eval.py` | docstring 中 config 路径 |
-| `.gitignore` | `data/` + `src/data/` → `CNN/data/` |
-| `.github/copilot-instructions.md` | 全部路径对齐新结构 |
-| `README.md` | 完全重写，匹配新目录树和运行命令 |
-| `CNN/src/readme.md` | 从混合 CNN+LLM 内容精简为纯 CNN 速查 |
+| 文件                               | 修改内容                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| `CNN/src/analyze_search_space.py`  | `../CNN_pruning/results_search_space/` → `../results_search_space/`       |
+| `CNN/src/run_ss3_supplement.py`    | `../CNN_pruning/results_search_space/` → `../results_search_space/`       |
+| `CNN/src/run_quantization.py`      | docstring 中 `src/run_quantization.py` → `CNN/src/run_quantization.py` 等 |
+| `CNN/src/run_search_space_eval.py` | docstring 中 config 路径                                                  |
+| `.gitignore`                       | `data/` + `src/data/` → `CNN/data/`                                       |
+| `.github/copilot-instructions.md`  | 全部路径对齐新结构                                                        |
+| `README.md`                        | 完全重写，匹配新目录树和运行命令                                          |
+| `CNN/src/readme.md`                | 从混合 CNN+LLM 内容精简为纯 CNN 速查                                      |
 
 ### 验证结果
 
-| 检查项 | 结果 |
-|--------|------|
-| `python basic/hello_torch.py` | ✅ PyTorch 2.7.1+cu118, RTX 4060 |
-| `import pruning_common` (from CNN/src/) | ✅ OK |
-| `python CNN/src/run_baseline.py --help` | ✅ 参数列表正常 |
-| `python LLM/src/run_llm_wanda.py --config LLM/configs/llm_wanda.yaml --help` | ✅ 参数列表正常 |
-| `git status` | ✅ 全部显示为 R（rename），历史完整 |
+| 检查项                                                                       | 结果                               |
+| ---------------------------------------------------------------------------- | ---------------------------------- |
+| `python basic/hello_torch.py`                                                | ✅ PyTorch 2.7.1+cu118, RTX 4060    |
+| `import pruning_common` (from CNN/src/)                                      | ✅ OK                               |
+| `python CNN/src/run_baseline.py --help`                                      | ✅ 参数列表正常                     |
+| `python LLM/src/run_llm_wanda.py --config LLM/configs/llm_wanda.yaml --help` | ✅ 参数列表正常                     |
+| `git status`                                                                 | ✅ 全部显示为 R（rename），历史完整 |
 
 ### Git Commit
 

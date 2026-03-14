@@ -15,14 +15,14 @@ Steps:
      index + codebook, reconstruct via lookup.
   4. Per-layer sensitivity analysis + brief written analysis.
 
-Usage (from project root):
+Usage (from CNN/ directory):
   python src/run_quantization.py \\
-      --ckpt CNN_pruning/results_src/hw90_baseline_best.pt \\
-      --out-dir CNN_pruning/results_quantization
+      --ckpt results_src/hw90_baseline_best.pt \\
+      --out-dir results_quantization
 
   # Or train baseline from scratch (≈80 epochs, needs GPU):
   python src/run_quantization.py --train-baseline --device cuda \\
-      --out-dir CNN_pruning/results_quantization
+      --out-dir results_quantization
 """
 
 import argparse

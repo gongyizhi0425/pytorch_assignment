@@ -9,8 +9,7 @@ venv/
 .venv/
 
 # ──────── Datasets (too large for git) ────────
-data/
-src/data/
+CNN/data/
 *.tar.gz
 
 # ──────── Model checkpoints & weights (large binary) ────────

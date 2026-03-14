@@ -1,0 +1,73 @@
+======================================================================
+Search Space Quality Evaluation — Analysis Report
+======================================================================
+
+Baseline MobileNetV2 (res=32, k=3, w=1.0, d=1.0):
+  Accuracy           : 61.4%
+  GFLOPs             : 0.1891
+  Peak Act. Memory   : 9.13 MB
+
+Memory constraint: peak activation memory ≤ 2.0 MB
+
+--- SS1_ResWidth ---
+  Sampled architectures      : 20
+  Meet memory constraint     : 14 / 20
+  Accuracy range             : 49.7% – 76.0%  (mean 61.8%)
+  FLOPs range                : 0.0206 – 0.9443 GFLOPs
+  Activation memory range    : 1.01 – 4.57 MB
+  [Constrained] Accuracy     : 49.7% – 65.5%  (mean 57.4%)
+  [Constrained] FLOPs p=80%  : 0.1891 GFLOPs
+  [Constrained] Best model   : acc=65.5%, FLOPs=0.2550, mem=1.54 MB
+    → config: res=36, k=3, w=1.0, d=1.0
+
+--- SS2_KernelDepth ---
+  Sampled architectures      : 13
+  Meet memory constraint     : 13 / 13
+  Accuracy range             : 55.1% – 69.8%  (mean 62.5%)
+  FLOPs range                : 0.1216 – 0.5114 GFLOPs
+  Activation memory range    : 1.22 – 1.22 MB
+  [Constrained] Accuracy     : 55.1% – 69.8%  (mean 62.5%)
+  [Constrained] FLOPs p=80%  : 0.3780 GFLOPs
+  [Constrained] Best model   : acc=69.8%, FLOPs=0.1216, mem=1.22 MB
+    → config: res=32, k=3, w=1.0, d=0.5
+
+--- SS3_ResDepth ---
+  Sampled architectures      : 20
+  Meet memory constraint     : 10 / 20
+  Accuracy range             : 28.4% – 51.3%  (mean 42.6%)
+  FLOPs range                : 0.0833 – 0.8990 GFLOPs
+  Activation memory range    : 0.95 – 3.80 MB
+  [Constrained] Accuracy     : 38.6% – 49.5%  (mean 42.7%)
+  [Constrained] FLOPs p=80%  : 0.2981 GFLOPs
+  [Constrained] Best model   : acc=49.5%, FLOPs=0.1216, mem=1.69 MB
+    → config: res=32, k=3, w=1.0, d=0.5
+
+======================================================================
+Comparison Summary
+======================================================================
+
+  Highest mean accuracy  : SS2_KernelDepth  (62.5%)
+  Lowest FLOPs at p=80%  : SS1_ResWidth  (0.1891 GFLOPs)
+  Highest feasibility    : SS2_KernelDepth  (100%)
+
+  KEY FINDING:
+  Under the 2.0 MB memory constraint:
+  - 'SS2_KernelDepth' search space produces the highest-quality architectures
+    (mean constrained accuracy 62.5%).
+  - 'SS1_ResWidth' reaches 80% of its quality at the lowest FLOPs cost
+    (0.1891 GFLOPs).
+
+  INTERPRETATION:
+  SS1 (Resolution × Width) spans the widest range of FLOPs and memory,
+    offering high diversity but many architectures violate the memory limit.
+  SS2 (Kernel × Depth) at fixed resolution=32 & width=1.0 has nearly
+    uniform activation memory, so ALL models satisfy the constraint.
+    Varying kernel and depth affects FLOPs but not spatial dimensions.
+  SS3 (Resolution × Depth) varies both spatial size and network depth,
+    covering a broad FLOPs range with moderate memory variation.
+  NOTE: SS3 was trained on CPU with 5 epochs/5k samples (vs 10 epochs
+    /10k samples for SS1/SS2 on GPU), so SS3 accuracy is under-estimated.
+  CONCLUSION: The choice of which dimensions to vary profoundly affects
+    both the feasibility and quality of architectures discoverable
+    under hardware constraints. SS2 (Kernel × Depth) provides the most
+    reliable search space under memory limits.

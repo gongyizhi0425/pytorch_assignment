@@ -1,0 +1,51 @@
+# ============================================================
+# Search Space Quality Evaluation – Configuration
+# ============================================================
+# Model family : MobileNetV2 (flexible)
+# Dataset      : CIFAR-10
+# Dimensions   : resolution, kernel_size, width_mult, depth_mult
+# ============================================================
+
+device: auto            # auto / cuda / cpu
+data_dir: ../data
+output_dir: ../CNN_pruning/results_search_space
+seed: 42
+
+# Peak-activation-memory constraint for Step 3 analysis (MB).
+# If all models are above / below this, the script auto-adjusts.
+memory_limit_mb: 5.0
+
+# ---------- Baseline model ----------
+baseline:
+  resolution: 32
+  kernel_size: 3
+  width_mult: 1.0
+  depth_mult: 1.0
+
+# ---------- Training (applied to every architecture) ----------
+training:
+  epochs: 10
+  lr: 0.05
+  train_batch_size: 128
+  eval_batch_size: 256
+  train_limit: 10000      # subset of 50 k training images (speed)
+  test_limit: 2000         # subset of 10 k test images
+  num_workers: 2
+  seed: 42
+
+# ---------- Search space ----------
+search_space:
+  n_samples_per_space: 20
+  seed: 42
+
+  # Candidate values for each dimension
+  resolutions:  [24, 28, 32, 36, 40, 48]
+  kernel_sizes: [3, 5, 7]
+  width_mults:  [0.35, 0.5, 0.75, 1.0, 1.25, 1.5]
+  depth_mults:  [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+
+  # Fixed values when a dimension is not varied
+  default_resolution: 32
+  default_kernel: 3
+  default_width: 1.0
+  default_depth: 1.0
